@@ -1,0 +1,22 @@
+{
+    "name": "markdown",
+    "dockerComposeFile": "./docker-compose.yml",
+    "service": "node",
+    "workspaceFolder": "/usr/src/app",
+    "remoteUser": "root",
+    "customizations": {
+      "vscode": {
+        "extensions": [
+            "formulahendry.auto-close-tag",
+            "formulahendry.auto-rename-tag",
+            "oderwat.indent-rainbow",
+            "sasa.vscode-sass-format",
+            "dbaeumer.vscode-eslint",
+            "denoland.vscode-deno",
+            "esbenp.prettier-vscode",
+            "Vue.volar",
+            "shd101wyy.markdown-preview-enhanced"
+        ]
+      }
+    }
+  }

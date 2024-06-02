@@ -1,0 +1,26 @@
+{
+  "name": "@nence/datetime",
+  "version": "1.0.0",
+  "description": "Implementation of a date/time class with timezone conversion support.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "test": "tsx test.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codesmith666/datetime.git"
+  },
+  "keywords": [
+    "datetime"
+  ],
+  "author": "nence",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "tsx": "^4.10.5",
+    "typescript": "^5.4.5"
+  }
+}
