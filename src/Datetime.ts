@@ -182,6 +182,9 @@ export class Datetime {
     const offset = Datetime.stringToOffset(this.tz)! * 60 * 1000;
     return msut + offset;
   }
+  get unixtime(){
+    return Math.floor(this.time/1000);
+  }
   get year() {
     return this.dt.getFullYear();
   }
