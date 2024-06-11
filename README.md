@@ -25,9 +25,8 @@ const dt2 = new Datetime(undefined, "Asia/Tokyo"); // now(Asia/Tokyo)
 const dt3 = new Datetime(0); // 1970-01-01T00:00:00+00:00
 const dt4 = new Datetime("2024-06-03T20:01:23", "Asia/Tokyo"); // 2024-06-03T20:01:23+09:00
 const dt5 = new Datetime("2024-06-03T20:01:23+09:00"); // 2024-06-03T20:01:23+09:00
-const dt6 = new Datetime(new Date()); // now(utc)
-const dt7 = new Datetime(new Datetime()); // copy
-const dt8 = new Datetime({ seconds: 60 }, "Asia/Tokyo"); // 60 seconds from the present
+const dt6 = new Datetime(new Datetime()); // copy
+const dt7 = new Datetime({ seconds: 60 }, "Asia/Tokyo"); // 60 seconds from the present
 ```
 
 ### Timezone conversion
