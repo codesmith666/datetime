@@ -182,8 +182,8 @@ export class Datetime {
     const offset = Datetime.stringToOffset(this.tz)! * 60 * 1000;
     return msut + offset;
   }
-  get unixtime(){
-    return Math.floor(this.time/1000);
+  get unixtime() {
+    return Math.floor(this.time / 1000);
   }
   get year() {
     return this.dt.getFullYear();
@@ -314,10 +314,11 @@ export class Datetime {
     }
     // timezone notation
     if (source.match(/^[A-Za-z]+\/[A-Za-z]+$/)) {
-      const date = new Date("1970-01-01T00:00:00");
-      const local = new Date(date.toLocaleString("utc", { timeZone: source }));
-      const offset = (local.getTime() / 1000 / 60) * -1;
-      return offset;
+      const jaJP = new Date(0).toLocaleString("ja-JP", { timeZone: source });
+      const [date, time] = jaJP.split(" ");
+      const y = parseInt(date.split("/")[0]);
+      const [h, m] = time.split(":").map((v) => parseInt(v));
+      return y < 1970 ? (24 - h) * 60 + m : -(h * 60 + m);
     }
     // default
     return undefined;

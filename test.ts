@@ -132,6 +132,15 @@ test("Similar tests", () => {
   eq("that ut", at2pg.time, ut);
 });
 
+test("Timezone conversion", () => {
+  const utc = new Datetime("1970-01-01T00:00:00", "utc");
+  const at = utc.toTimezone("Asia/Tokyo");
+
+  console.log(utc.toTimezone("Asia/Tokyo").toString());
+
+  eq("utc->AsiaTokyo", at.toString(), "1970-01-01T09:00:00+09:00");
+});
+
 test("Getter test", () => {
   const dt = new Datetime("2000-01-02T03:04:05.678", AT);
   const past = "2000-01-02T03:04:05.677+09:00";
