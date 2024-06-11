@@ -46,7 +46,7 @@ export const toShift = (seconds: number): Shift => {
   return { days: da, hours: ho, minutes: mi, seconds: se, milliseconds: ms };
 };
 
-type Source = string | number | Date | Datetime | Shift | undefined | null;
+type Source = string | number | Datetime | Shift | undefined | null;
 
 /**
  *
@@ -61,6 +61,10 @@ export class Datetime {
    * @param source Original date representation to initialize the object
    * @param timezone Time zone for display
    */
+  get tzo() {
+    return new Date().getTimezoneOffset() * 60 * 1000;
+  }
+
   constructor(source?: Source, timezone?: string) {
     // If source is null or undefined, initialize with the current date and time.
     if (source === null || source === undefined) {
@@ -82,7 +86,7 @@ export class Datetime {
       // This is because the Date class calculates the offset and stores it as UTC.
       const m = source.match(/^(.*?)([-+]\d?\d:\d?\d)$/);
       if (m) {
-        this.dt = new Date(m[1]);
+        this.dt = new Date(new Date(m[1]).getTime() - this.tzo);
         // Check offset confliction.
         const srcOffset = Datetime.stringToOffset(m[2]);
 
@@ -109,7 +113,7 @@ export class Datetime {
           );
         }
       } else {
-        this.dt = new Date(source);
+        this.dt = new Date(new Date(source).getTime() - this.tzo);
         this.tz = timezone || "utc";
       }
       return;
@@ -117,7 +121,7 @@ export class Datetime {
 
     // If the source is a Date object, initialize with it.
     if (source instanceof Date) {
-      this.dt = new Date(source);
+      this.dt = new Date(new Date(source).getTime() - this.tzo);
       this.tz = timezone ?? "utc";
       return;
     }
@@ -152,8 +156,7 @@ export class Datetime {
   toTimezone(timezone: string) {
     const src = Datetime.stringToOffset(this.tz)! * 60 * 1000;
     const dst = Datetime.stringToOffset(timezone)! * 60 * 1000;
-    const date = new Date(this.dt.getTime() + src - dst);
-    return new Datetime(date, timezone);
+    return new Datetime(this.dt.getTime() + src - dst, timezone);
   }
 
   shift(shift: Shift) {
@@ -174,7 +177,7 @@ export class Datetime {
     date.setSeconds(this.dt.getSeconds() + se);
     date.setMilliseconds(this.dt.getMilliseconds() + ms);
 
-    return new Datetime(date, this.tz);
+    return new Datetime(date.getTime(), this.tz);
   }
 
   get time() {
@@ -186,25 +189,25 @@ export class Datetime {
     return Math.floor(this.time / 1000);
   }
   get year() {
-    return this.dt.getFullYear();
+    return this.dt.getUTCFullYear();
   }
   get month() {
-    return this.dt.getMonth();
+    return this.dt.getUTCMonth();
   }
   get day() {
-    return this.dt.getDate();
+    return this.dt.getUTCDate();
   }
   get hours() {
-    return this.dt.getHours();
+    return this.dt.getUTCHours();
   }
   get minutes() {
-    return this.dt.getMinutes();
+    return this.dt.getUTCMinutes();
   }
   get seconds() {
-    return this.dt.getSeconds();
+    return this.dt.getUTCSeconds();
   }
   get milliseconds() {
-    return this.dt.getMilliseconds();
+    return this.dt.getUTCMilliseconds();
   }
   get timezone() {
     return this.tz;
@@ -237,13 +240,13 @@ export class Datetime {
    */
   format(fmt: string = "y-m-dTh:i:s.lz") {
     return Datetime.format(
-      this.dt.getFullYear(),
-      this.dt.getMonth() + 1,
-      this.dt.getDate(),
-      this.dt.getHours(),
-      this.dt.getMinutes(),
-      this.dt.getSeconds(),
-      this.dt.getMilliseconds(),
+      this.year,
+      this.month + 1,
+      this.day,
+      this.hours,
+      this.minutes,
+      this.seconds,
+      this.milliseconds,
       this.tz,
       fmt
     );

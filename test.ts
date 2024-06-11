@@ -10,11 +10,11 @@ import { Datetime, toSecond } from "./src/Datetime.ts";
 const eq = (t: string, a: any, b: any) => {
   if (Number.isNaN(a) && Number.isNaN(b)) return;
   if (a === b) {
-    console.error(`${t} ... \u001b[32mOK\u001b[37m`);
+    console.log(`\u001b[37m${t} ... \u001b[32mOK\u001b[37m`);
     return;
   }
-  console.error(
-    `${t} ... \u001b[31mfailed actual:${a} !== expected:${b}\u001b[37m`
+  console.log(
+    `\u001b[37m${t} ... \u001b[31mfailed actual:${a} !== expected:${b}\u001b[37m`
   );
 };
 
@@ -55,10 +55,10 @@ test("Constructor test", () => {
   }
   // date
   {
-    const dt = new Datetime(new Date(12345));
+    const dt = new Datetime(12345);
     eq("date1", dt.format(), "1970-01-01T00:00:12.345+00:00");
 
-    const dt2 = new Datetime(new Date("2024-06-01T23:25:34"), AT);
+    const dt2 = new Datetime("2024-06-01T23:25:34", AT);
     eq("date2", dt2.format(), "2024-06-01T23:25:34.000+09:00");
   }
   // datetime
