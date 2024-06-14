@@ -135,10 +135,17 @@ test("Similar tests", () => {
 test("Timezone conversion", () => {
   const utc = new Datetime("1970-01-01T00:00:00", "utc");
   const at = utc.toTimezone("Asia/Tokyo");
-
-  console.log(utc.toTimezone("Asia/Tokyo").toString());
-
   eq("utc->AsiaTokyo", at.toString(), "1970-01-01T09:00:00+09:00");
+
+  const pc = utc.toTimezone("Pacific/Chatham");
+  eq("utc->Pacific/Chatham", pc.toString(), "1970-01-01T12:45:00+12:45");
+
+  const at2 = pc.toTimezone("Asia/Tokyo");
+  eq("at->pc", at2.toString(), "1970-01-01T09:00:00+09:00");
+
+  eq("date at", at.date.getTime(), 0);
+  eq("date pc", pc.date.getTime(), 0);
+  eq("date at2", at2.date.getTime(), 0);
 });
 
 test("Getter test", () => {

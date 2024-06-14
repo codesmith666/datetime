@@ -213,8 +213,9 @@ export class Datetime {
     return this.tz;
   }
   get date() {
-    return this.toTimezone("utc").dt;
+    return new Date(this.dt.getTime() + this.offset * 60 * 1000);
   }
+  // return offset minutes
   get offset() {
     return Datetime.stringToOffset(this.tz);
   }
@@ -302,7 +303,7 @@ export class Datetime {
    */
   static stringToOffset(source?: string) {
     // undefined
-    if (source === undefined) return undefined;
+    if (source === undefined) return 0; // utc
 
     // offset notation
     const m = source.match(/^([-+])(\d?\d):(\d?\d)$/);
@@ -321,10 +322,11 @@ export class Datetime {
       const [date, time] = jaJP.split(" ");
       const y = parseInt(date.split("/")[0]);
       const [h, m] = time.split(":").map((v) => parseInt(v));
-      return y < 1970 ? (24 - h) * 60 + m : -(h * 60 + m);
+      const diff = -(h * 60 + m);
+      return y < 1970 ? 24 * 60 + diff : diff;
     }
     // default
-    return undefined;
+    return 0; // utc;
   }
 
   static offsetToString(offset: number) {
