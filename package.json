@@ -1,6 +1,6 @@
 {
   "name": "@nence/datetime",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Implementation of a date/time class with timezone conversion support.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,9 +18,9 @@
   ],
   "author": "nence",
   "license": "MIT",
-  "dependencies": {},
   "devDependencies": {
     "tsx": "^4.10.5",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "@types/node": "^20.14.2"
   }
 }

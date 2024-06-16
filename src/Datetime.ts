@@ -1,3 +1,5 @@
+import { timingSafeEqual } from "crypto";
+
 export type Shift = {
   years?: number;
   months?: number;
@@ -42,10 +44,11 @@ export const toShift = (seconds: number): Shift => {
   const mi = Math.floor(mod / 60);
   mod = mod % 60;
   const se = Math.floor(mod);
-  const ms = (mod * 1000) % 1000;
+  const ms = Math.round((mod * 1000) % 1000);
   return { days: da, hours: ho, minutes: mi, seconds: se, milliseconds: ms };
 };
 
+// could not support Date
 type Source = string | number | Datetime | Shift | undefined | null;
 
 /**
@@ -61,82 +64,73 @@ export class Datetime {
    * @param source Original date representation to initialize the object
    * @param timezone Time zone for display
    */
-  get tzo() {
-    return new Date().getTimezoneOffset() * 60 * 1000;
-  }
+  constructor(source?: Source, timezone: string | undefined = undefined) {
+    // save timezone
+    this.tz = timezone ?? "utc";
 
-  constructor(source?: Source, timezone?: string) {
     // If source is null or undefined, initialize with the current date and time.
     if (source === null || source === undefined) {
-      this.dt = new Date(new Date().getTime() + Datetime.gap);
-      this.tz = timezone ?? "utc";
+      this.dt = new Date(new Date().getTime() - this.offsetMS + Datetime.gap);
       return;
     }
 
     // If the source is a numeric type, initialize as unixtime in milliseconds.
     else if (typeof source === "number") {
-      this.dt = new Date(source);
-      this.tz = timezone ?? "utc";
+      this.dt = new Date(source - this.offsetMS);
       return;
     }
 
     // If the source is a string, initialize it as a string in ISO8601 notation.
     if (typeof source === "string") {
-      // If offset is specified, separate and initialize date as utc
-      // This is because the Date class calculates the offset and stores it as UTC.
-      const m = source.match(/^(.*?)([-+]\d?\d:\d?\d)$/);
-      if (m) {
-        this.dt = new Date(new Date(m[1]).getTime() - this.tzo);
-        // Check offset confliction.
-        const srcOffset = Datetime.stringToOffset(m[2]);
+      let tz: string;
 
-        // When source offset is omitted.
-        if (srcOffset === undefined) {
-          this.tz = timezone || "utc";
-          return;
+      // If offset are omitted
+      const offset = Datetime.stringToOffset(source);
+      if (offset === undefined) {
+        const off = Datetime.stringToOffset(timezone);
+        let os: number;
+        if (off === undefined) {
+          os = 0;
+          tz = "UTC";
+        } else {
+          os = off;
+          tz = timezone!;
         }
-
-        // When source offset is specified,ignore timezone
-        const tzOffset = Datetime.stringToOffset(timezone);
-        if (timezone === undefined) {
-          this.tz = Datetime.offsetToString(srcOffset);
-          return;
-        }
-
-        // Source offset and specified timezone collided.
-        this.tz = timezone;
-        if (srcOffset !== tzOffset) {
-          const arg1 = `offset of arg1 - "${source}"`;
-          const arg2 = `arg2 - "${timezone}"`;
-          console.error(
-            `warning: Adopt ${arg2} and ignore ${arg1} at new Datetime().`
-          );
-        }
-      } else {
-        this.dt = new Date(new Date(source).getTime() - this.tzo);
-        this.tz = timezone || "utc";
+        source += Datetime.offsetToString(os); // important
       }
-      return;
-    }
-
-    // If the source is a Date object, initialize with it.
-    if (source instanceof Date) {
-      this.dt = new Date(new Date(source).getTime() - this.tzo);
-      this.tz = timezone ?? "utc";
+      // Offset are specified
+      else {
+        const off = Datetime.stringToOffset(timezone);
+        if (off === undefined) {
+          tz = Datetime.offsetToString(offset);
+        }
+        // Timezone are specified.
+        else if (offset !== off) {
+          tz = timezone!;
+        } else {
+          tz = timezone!;
+        }
+      }
+      this.tz = tz;
+      this.dt = new Date(new Date(source).getTime() - this.offsetMS);
       return;
     }
 
     // If source is a Datetime object, initialize with it.
     if (source instanceof Datetime) {
-      this.dt = new Date(source.dt);
       this.tz = source.tz;
+      this.dt = new Date(source.dt);
+      if (timezone) {
+        const datetime = this.toTimezone(timezone);
+        this.dt = datetime.dt;
+        this.tz = datetime.tz;
+      }
       return;
     }
 
     // If source is a Shift object, initialize with shifted current time.
     if (isShift(source)) {
-      this.dt = new Datetime().shift(source).dt;
-      this.tz = timezone ?? "utc";
+      this.dt = new Datetime(undefined, this.tz).shift(source).dt;
       return;
     }
 
@@ -154,36 +148,18 @@ export class Datetime {
    * @param timezone
    */
   toTimezone(timezone: string) {
-    const src = Datetime.stringToOffset(this.tz)! * 60 * 1000;
-    const dst = Datetime.stringToOffset(timezone)! * 60 * 1000;
-    return new Datetime(this.dt.getTime() + src - dst, timezone);
+    const src = (Datetime.stringToOffset(this.tz) ?? 0) * 60 * 1000;
+    // const dst = (Datetime.stringToOffset(timezone) ?? 0) * 60 * 1000;
+    return new Datetime(this.dt.getTime() + src, timezone);
   }
 
   shift(shift: Shift) {
-    const ye = shift.years ?? 0;
-    const mo = shift.months ?? 0;
-    const da = shift.days ?? 0;
-    const ho = shift.hours ?? 0;
-    const mi = shift.minutes ?? 0;
-    const se = shift.seconds ?? 0;
-    const ms = shift.milliseconds ?? 0;
-
-    const date = new Date(this.dt);
-    date.setFullYear(this.dt.getFullYear() + ye);
-    date.setMonth(this.dt.getMonth() + mo);
-    date.setDate(this.dt.getDate() + da);
-    date.setHours(this.dt.getHours() + ho);
-    date.setMinutes(this.dt.getMinutes() + mi);
-    date.setSeconds(this.dt.getSeconds() + se);
-    date.setMilliseconds(this.dt.getMilliseconds() + ms);
-
-    return new Datetime(date.getTime(), this.tz);
+    const shiftMS = toSecond(shift) * 1000;
+    return new Datetime(this.time + shiftMS, this.tz);
   }
 
   get time() {
-    const msut = this.dt.getTime();
-    const offset = Datetime.stringToOffset(this.tz)! * 60 * 1000;
-    return msut + offset;
+    return this.dt.getTime() + this.offsetMS;
   }
   get unixtime() {
     return Math.floor(this.time / 1000);
@@ -213,7 +189,7 @@ export class Datetime {
     return this.tz;
   }
   get date() {
-    return new Date(this.dt.getTime() + this.offset * 60 * 1000);
+    return new Date(this.dt.getTime() + this.offsetMS);
   }
   // return offset minutes
   get offset() {
@@ -224,6 +200,14 @@ export class Datetime {
   }
   get iso8601x() {
     return this.format("y-m-dTh:i:sz");
+  }
+
+  // private
+  private get offsetMS() {
+    return this.offset! * 60 * 1000;
+  }
+  private get tzoMS() {
+    return new Date().getTimezoneOffset() * 60 * 1000;
   }
 
   /**
@@ -303,21 +287,21 @@ export class Datetime {
    */
   static stringToOffset(source?: string) {
     // undefined
-    if (source === undefined) return 0; // utc
+    if (source === undefined) return undefined;
 
     // offset notation
-    const m = source.match(/^([-+])(\d?\d):(\d?\d)$/);
+    const m = source.match(/^.*([-+])(\d?\d):(\d?\d).*/);
     if (m) {
       const hour = parseInt(m[2]);
       const minute = parseInt(m[3]);
       return (hour * 60 + minute) * (m[1] === "-" ? 1 : -1) || 0; // NG:-0
     }
     // utc
-    if (source.match(/z$/i) || source === "utc") {
+    if (source.match(/(UTC|GMT)/i) || source.match(/z$/i)) {
       return 0;
     }
     // timezone notation
-    if (source.match(/^[A-Za-z]+\/[A-Za-z]+$/)) {
+    if (source.match(/^[A-Za-z]+\/[A-Za-z]+/)) {
       const jaJP = new Date(0).toLocaleString("ja-JP", { timeZone: source });
       const [date, time] = jaJP.split(" ");
       const y = parseInt(date.split("/")[0]);
@@ -325,8 +309,8 @@ export class Datetime {
       const diff = -(h * 60 + m);
       return y < 1970 ? 24 * 60 + diff : diff;
     }
-    // default
-    return 0; // utc;
+    // could not detect
+    return undefined; // utc;
   }
 
   static offsetToString(offset: number) {
@@ -371,7 +355,10 @@ export class Datetime {
       this.gap = 0;
       return;
     }
-    this.gap = new Datetime(clock).time - new Datetime().time;
+    this.gap = new Datetime(clock).time - new Date().getTime();
+  }
+  static resetClock() {
+    this.gap = 0;
   }
 }
 
